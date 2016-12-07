@@ -18,16 +18,22 @@ import com.almasb.fxgl.physics.PhysicsComponent;
  */
 public class MissileControl extends AbstractControl {
 
-    private PhysicsComponent missile;
+    private PositionComponent position;
     
-     @Override
+    private boolean isPlayer;
+    
+    private double velocity;
+
+    @Override
     public void onAdded(Entity entity) {
-        missile = entity.getComponentUnsafe(PhysicsComponent.class);
+        position = entity.getComponentUnsafe(PositionComponent.class);
     }
-    
+
     @Override
     public void onUpdate(Entity entity, double d) {
+        velocity = d * 200;
         
+        position.translateY(velocity);
     }
 
 }

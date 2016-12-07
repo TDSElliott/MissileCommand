@@ -11,5 +11,6 @@ package com.tylere.mc;
  */
 public enum EntityType {
         PLAYER_MISSILE, ENEMY_MISSILE, CITY,
+        EXPLOSION,
         WALL, LEFT_WALL, RIGHT_WALL
 }

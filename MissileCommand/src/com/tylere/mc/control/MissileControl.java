@@ -11,6 +11,9 @@ import com.almasb.ents.component.Required;
 import com.almasb.fxgl.entity.Entities;
 import com.almasb.fxgl.entity.component.PositionComponent;
 import com.almasb.fxgl.physics.PhysicsComponent;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
 
 /**
  *
@@ -18,16 +21,24 @@ import com.almasb.fxgl.physics.PhysicsComponent;
  */
 public class MissileControl extends AbstractControl {
 
-    private PhysicsComponent missile;
+    private PositionComponent position;
     
-     @Override
+    private boolean isPlayer;
+    
+    private double velocityY, velocityX;
+
+    @Override
     public void onAdded(Entity entity) {
-        missile = entity.getComponentUnsafe(PhysicsComponent.class);
+        position = entity.getComponentUnsafe(PositionComponent.class);
     }
-    
+
     @Override
     public void onUpdate(Entity entity, double d) {
-        
+//        velocityY = d * 200;
+//        velocityX = d * 200;
+//        
+//        position.translateY(velocityY);
+//        position.translateX(velocityX);
     }
 
 }

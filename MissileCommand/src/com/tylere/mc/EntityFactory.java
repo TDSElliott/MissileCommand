@@ -11,14 +11,11 @@ import com.almasb.fxgl.asset.AssetLoader;
 import com.almasb.fxgl.entity.EntityView;
 import com.almasb.fxgl.entity.GameEntity;
 import com.almasb.fxgl.entity.component.CollidableComponent;
-import com.almasb.fxgl.entity.component.RotationComponent;
-import com.almasb.fxgl.entity.control.ProjectileControl;
-import com.almasb.fxgl.physics.PhysicsComponent;
-import javafx.geometry.Point2D;
+import com.almasb.fxgl.entity.component.IDComponent;
+import com.almasb.fxgl.entity.control.OffscreenCleanControl;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import org.jbox2d.dynamics.BodyType;
 
 /**
  *
@@ -27,7 +24,7 @@ import org.jbox2d.dynamics.BodyType;
 public class EntityFactory {
 
     private static AssetLoader assetLoader;
-    private GameEntity missle;
+    private GameEntity missile;
 
     static {
         assetLoader = FXGL.getService(ServiceType.ASSET_LOADER);
@@ -39,32 +36,30 @@ public class EntityFactory {
         missile.getPositionComponent().setValue(x, y);
         missile.getMainViewComponent().setView(new EntityView(assetLoader.loadTexture("missile.png")), true);
 
+        // Components
         missile.addComponent(new CollidableComponent(true));
-
-        Point2D direction = new Point2D(0, 1);
-        Point2D test = new Point2D(Math.toRadians(1000), Math.toRadians(90));
-
-//        PhysicsComponent physics = new PhysicsComponent();
-//
-//        physics.setBodyType(BodyType.DYNAMIC);
-//        
-//        physics.setLinearVelocity(1, 1);
-//    
-//        missile.addControl(new ProjectileControl(test, 10 * 6));
+        
+        // Controls
+        missile.addControl(new OffscreenCleanControl());
+        
+        int rand = (int) (Math.random() * 9);
+        switch (rand) {
+            case 0: x = 40; y = 600;
+            case 1: x = 156; y = 600;
+            case 2: x = 243; y = 600;
+            case 3: x = 330; y = 600;
+            case 4: x = 400; y = 600;
+            case 5: x = 471; y = 600;
+            case 6: x = 558; y = 600;
+            case 7: x = 645; y = 600;
+            case 8: x = 754; y = 600;
+        }
+        
         missile.addControl(new MissileControl());
         
+
+        int id = 42;
         return missile;
-    }
-
-    public void setOnPhysicsInitialized() {
-        PhysicsComponent physics = new PhysicsComponent();
-        System.out.println("test");
-        physics.setBodyType(BodyType.DYNAMIC);
-
-        physics.setLinearVelocity(1, 1);
-
-//        missile.addComponent(physics);
-        System.out.println("test2");
     }
 
     public static Entity newCity(double x, double y) {
@@ -85,5 +80,17 @@ public class EntityFactory {
         explosion.addComponent(new CollidableComponent(true));
 
         return explosion;
+    }
+    
+    public static Entity newTrail(double x, double y, int id) {
+        GameEntity trail = new GameEntity();
+        trail.getTypeComponent().setValue(EntityType.TRAIL);        
+        trail.getPositionComponent().setValue(x, y);
+        trail.getMainViewComponent().setView(new Rectangle(1, 1, Color.RED));
+        trail.addComponent(new CollidableComponent(true));
+        
+        trail.addComponent(new IDComponent("trail", id));
+       
+        return trail;
     }
 }

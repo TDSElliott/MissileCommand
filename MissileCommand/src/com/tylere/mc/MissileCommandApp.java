@@ -4,25 +4,21 @@
  */
 package com.tylere.mc;
 
-import com.almasb.ents.Entity;
+import com.almasb.ents.Entity; // Entities are the objects that the library can control
 import com.almasb.fxgl.app.ApplicationMode;
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.entity.Entities;
 import com.almasb.fxgl.entity.EntityView;
-import com.almasb.fxgl.entity.GameEntity;
 import com.almasb.fxgl.entity.RenderLayer;
-import com.almasb.fxgl.entity.control.ProjectileControl;
+import com.almasb.fxgl.gameplay.GameWorld;
 import com.almasb.fxgl.input.Input;
 import com.almasb.fxgl.input.UserAction;
-import com.almasb.fxgl.physics.BoundingShape;
 import com.almasb.fxgl.physics.CollisionHandler;
-import com.almasb.fxgl.physics.PhysicsComponent;
 import com.almasb.fxgl.physics.PhysicsWorld;
 import com.almasb.fxgl.settings.GameSettings;
 import javafx.animation.KeyFrame;
 import javafx.animation.PathTransition;
 import javafx.animation.Timeline;
-import javafx.animation.TranslateTransition;
 import javafx.geometry.Point2D;
 import javafx.scene.image.Image;
 import javafx.scene.input.MouseButton;
@@ -32,10 +28,7 @@ import javafx.scene.shape.QuadCurve;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
-import org.jbox2d.dynamics.BodyType;
-import org.jbox2d.dynamics.FixtureDef;
-import com.almasb.fxgl.physics.HitBox;
-import com.almasb.gameutils.math.Vec2;
+import com.almasb.fxgl.texture.Texture;
 
 /**
  *
@@ -44,12 +37,13 @@ import com.almasb.gameutils.math.Vec2;
 public class MissileCommandApp extends GameApplication {
 
     private Point2D cursor = new Point2D(0, 0);
+    private double mouseX, mouseY;
 
     @Override
     protected void initSettings(GameSettings gs) {
         // The settings code to generate the window and remove FXGL intro for dev
-        gs.setWidth(600);
-        gs.setHeight(600);
+        gs.setWidth(800);
+        gs.setHeight(700);
         gs.setTitle("Missile Command");
         gs.setVersion("0.1");
         gs.setIntroEnabled(false);
@@ -69,7 +63,7 @@ public class MissileCommandApp extends GameApplication {
         double mouseX = cursor.getX();
         double mouseY = cursor.getY();
 
-        input.addAction(new UserAction("Spawn Anti-Ballastic") {
+        input.addAction(new UserAction("Spawn Anti-Ballistic") {
             @Override
             protected void onAction() {
                 Input input = getInput();
@@ -86,24 +80,6 @@ public class MissileCommandApp extends GameApplication {
                 timeline.play();
             }
         }, MouseButton.PRIMARY);
-        
-        input.addAction(new UserAction("Spawn Box") {
-            @Override
-            protected void onActionBegin() {
-                GameEntity box = createPhysicsEntity();
-
-                // 3. set hit box (-es) to specify bounding shape
-                box.getBoundingBoxComponent()
-                        .addHitBox(new HitBox("Left", BoundingShape.box(40, 40)));
-                box.getBoundingBoxComponent()
-                        .addHitBox(new HitBox("Right", new Point2D(40, 0), BoundingShape.box(40, 40)));
-
-                box.getMainViewComponent().setView(new Rectangle(80, 40, Color.BLUE));
-
-                getGameWorld().addEntity(box);
-            }
-        }, MouseButton.SECONDARY);
-        
     }
 
     @Override
@@ -134,14 +110,19 @@ public class MissileCommandApp extends GameApplication {
         getGameScene().setCursor("crosshair.png", dimensions);
 
         // Cities spawning
-        for (int x = 0; x < 6; x++) {
-            Entity city = EntityFactory.newCity(100 * x + 25, getHeight() - 100);
-            getGameWorld().addEntity(city);
+        for (int x = 1; x <= 6; x++) {
+            if (x < 4) {
+                Entity city = EntityFactory.newCity(100 * x + 0, getHeight() - 100);
+                getGameWorld().addEntity(city);
+            } else {
+                Entity city = EntityFactory.newCity(100 * x + 50, getHeight() - 100);
+                getGameWorld().addEntity(city);
+            }
         }
 
         ///// Spawning missiles at top of the screen to streak down /////
         getMasterTimer().runAtInterval(() -> {
-            Entity axisMissile = EntityFactory.newMissile(Math.random() * getWidth() - 64, 100, false);
+            Entity axisMissile = EntityFactory.newMissile(Math.random() * getWidth() - 64, 0, false);
 
             Point2D direction = new Point2D(10, 10);
 
@@ -164,11 +145,20 @@ public class MissileCommandApp extends GameApplication {
                 missile.removeFromWorld();
             }
         });
+        
+        // Setting collisions between cities and warheads
+        physicsWorld.addCollisionHandler(new CollisionHandler(EntityType.CITY, EntityType.ENEMY_MISSILE) {
+            @Override
+            protected void onCollisionBegin(Entity city, Entity missile) {
+                missile.removeFromWorld();
+                System.out.println("Your city has been nuked!");
+            }
+        });
     }
 
     @Override
     protected void initUI() {
-
+        // This code moves the game title across the screen, purely aesthetic
         ////////////////////////// Curve code beings /////////////////////////
         Text text = getUIFactory().newText("Missile Command", Color.BLUE, 48);
 
@@ -182,36 +172,28 @@ public class MissileCommandApp extends GameApplication {
         getGameScene().addUINode(text);
         transition.play();
         /////////////////////////// Curve code ends ///////////////////////////
+
+        Texture texture = getAssetLoader().loadTexture("bg.jpg");
+
+        EntityView bg = new EntityView(texture);
+
+        getGameScene().addGameView(bg);
     }
 
     @Override
     protected void onUpdate(double d) {
         Input input = getInput();
         Point2D cursor = input.getMousePositionWorld();
-//        System.out.println("Position X: " + cursor.getX() + " Position Y: " + cursor.getY());
 
         int size = 20;
         double x = cursor.getX();
         double y = cursor.getY();
     }
 
-    private GameEntity createPhysicsEntity() {
-        PhysicsComponent physics = new PhysicsComponent();
+    public GameWorld returnGameWorld() {
+        GameWorld gw = getGameWorld();
 
-        physics.setBodyType(BodyType.DYNAMIC);
-
-        FixtureDef fd = new FixtureDef();
-        fd.setDensity(0f);
-        fd.setRestitution(0f);
-        physics.setFixtureDef(fd);
-        Vec2 force = new Vec2(0, 0);
-        physics.applyBodyForceToCenter(force);
-
-        return Entities.builder()
-                .at(getInput().getMousePositionWorld())
-                // 2. add physics component
-                .with(physics)
-                .build();
+        return gw;
     }
 
     public static void main(String[] args) {

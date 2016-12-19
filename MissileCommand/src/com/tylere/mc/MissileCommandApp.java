@@ -29,6 +29,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 import com.almasb.fxgl.texture.Texture;
+import java.util.Timer;
 
 /**
  *
@@ -38,6 +39,7 @@ public class MissileCommandApp extends GameApplication {
 
     private Point2D cursor = new Point2D(0, 0);
     private double mouseX, mouseY;
+    private Timer timer;
 
     @Override
     protected void initSettings(GameSettings gs) {

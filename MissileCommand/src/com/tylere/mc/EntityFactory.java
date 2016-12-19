@@ -89,6 +89,7 @@ public class EntityFactory {
             missile.getMainViewComponent().setView(new EntityView(assetLoader.loadTexture("missile.png")), true);
             
             // Adds the actual control class
+//            System.out.println(x + " " + y);
             missile.addControl(new PlayerMissileControl(x, y));
             
             return missile;

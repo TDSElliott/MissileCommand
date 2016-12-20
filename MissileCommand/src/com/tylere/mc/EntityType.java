@@ -10,7 +10,7 @@ package com.tylere.mc;
  * @author Tyler
  */
 public enum EntityType {
-        PLAYER_MISSILE, ENEMY_MISSILE, CITY,
+        PLAYER_MISSILE, ENEMY_MISSILE, CITY, DESTROYED_CITY,
         EXPLOSION, TRAIL, SILO,
         WALL, LEFT_WALL, RIGHT_WALL
 }

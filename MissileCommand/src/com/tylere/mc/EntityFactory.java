@@ -34,13 +34,15 @@ public class EntityFactory {
 
     private static AssetLoader assetLoader;
     private GameEntity missile;
+    private static int ammoL = 5, ammoR = 5, ammoC = 5;
 
     static {
         assetLoader = FXGL.getService(ServiceType.ASSET_LOADER);
     }
 
     public static Entity newMissile(double x, double y, boolean isPlayer) {
-        if (!isPlayer) {
+        // <editor-fold desc="This is my enemy missile code.">
+        if (!isPlayer) { // Baddie
             GameEntity missile = new GameEntity();
             missile.getTypeComponent().setValue(EntityType.ENEMY_MISSILE);
             missile.getPositionComponent().setValue(x, y);
@@ -81,18 +83,41 @@ public class EntityFactory {
 
             int id = 42;
             return missile;
+            // </editor-fold>
+        } else { // Goodie
+            
+            if (ammoL > 0 && ammoC > 0 && ammoR > 0) {
+                GameEntity missile = new GameEntity();
 
-        } else {
-            GameEntity missile = new GameEntity();
-            missile.getTypeComponent().setValue(EntityType.PLAYER_MISSILE);
-            missile.getPositionComponent().setValue(400, 600);
-            missile.getMainViewComponent().setView(new EntityView(assetLoader.loadTexture("missile.png")), true);
+                missile.getTypeComponent().setValue(EntityType.PLAYER_MISSILE);
+
+                // This decides the tower to fire from depending on the target location
+                if (x <= 266 && ammoL > 0) {
+                    ammoL--;
+                    missile.getPositionComponent().setValue(50, 600);
+                } else if (x > 266 && x < 532 && ammoC > 0) {
+                    ammoC--;
+                    missile.getPositionComponent().setValue(400, 600);
+                } else if (x >= 532 && ammoR > 0){
+                    ammoR--;
+                    missile.getPositionComponent().setValue(750, 600);
+                } else {
+                   // This should never happen, just incase I change in future
+                }
+
+                missile.getMainViewComponent().setView(new EntityView(assetLoader.loadTexture("missile.png")), true);
+
+                // Adds the actual control class
+                missile.addControl(new PlayerMissileControl(x, y));
+
+                return missile;
+            } else {
+                GameEntity missile = new GameEntity();
+
+                missile.getTypeComponent().setValue(EntityType.PLAYER_MISSILE);
+                return missile;
+            }
             
-            // Adds the actual control class
-//            System.out.println(x + " " + y);
-            missile.addControl(new PlayerMissileControl(x, y));
-            
-            return missile;
         }
     }
 
@@ -143,4 +168,23 @@ public class EntityFactory {
 
         return trail;
     }
+    
+    // This is a varargs parameter, it can take in any number of integers
+    // and will assign them to the ammo array
+    public static void setAmmo(int... ammo) {
+        int x = ammo.length;
+        if (x == 1) 
+            ammoL = ammo[0];
+        else if (x > 1 && x < 3) {
+            ammoL = ammo[0];
+            ammoC = ammo[1];
+        } else if (x >= 3) {
+            ammoL = ammo[0];
+            ammoC = ammo[1];
+            ammoR = ammo[2];
+        }
+    }
+
 }
+
+

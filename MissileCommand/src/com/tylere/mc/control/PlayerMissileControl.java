@@ -43,8 +43,11 @@ public class PlayerMissileControl extends AbstractControl {
 //        System.out.println(baseDirection.multiply(0.0001).getX() + " " + baseDirection.getY());
 //        System.out.println("The x and y targets: " + x + " " + y);
         
-    if ((int) Entities.getPosition(entity).getValue().getX() == (int) x && (int) Entities.getPosition(entity).getValue().getY() == (int) y) {
-            System.out.println("Target reached sir!");
+    int posX = (int) Entities.getPosition(entity).getValue().getX();
+    int posY = (int) Entities.getPosition(entity).getValue().getY();    
+//     && (posY <(int) x + 5 && posY > (int) x - 5)
+    if ((posX <(int) x + 5 && posX > (int) x - 5)) {
+//            System.out.println("Target reached sir!");
             FXGL.getApp().getGameWorld().removeEntity(entity);
              Entity explosion = EntityFactory.newExplosion(x, y);
              FXGL.getApp().getGameWorld().addEntity(explosion);

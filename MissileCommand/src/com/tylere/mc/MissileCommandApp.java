@@ -10,7 +10,8 @@ import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.entity.Entities;
 import com.almasb.fxgl.entity.EntityView;
 import com.almasb.fxgl.entity.RenderLayer;
-import com.almasb.fxgl.gameplay.GameWorld;
+import com.almasb.fxgl.entity.component.MainViewComponent;
+import com.almasb.fxgl.entity.component.TypeComponent;
 import com.almasb.fxgl.input.Input;
 import com.almasb.fxgl.input.UserAction;
 import com.almasb.fxgl.physics.CollisionHandler;
@@ -29,7 +30,9 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 import com.almasb.fxgl.texture.Texture;
-import java.util.Timer;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.scene.text.Font;
 
 /**
  *
@@ -39,7 +42,8 @@ public class MissileCommandApp extends GameApplication {
 
     private Point2D cursor = new Point2D(0, 0);
     private double mouseX, mouseY;
-    private Timer timer;
+    private int missileCountdown;
+    public static IntegerProperty citiesDestroyed, ammoC;
 
     @Override
     protected void initSettings(GameSettings gs) {
@@ -68,26 +72,22 @@ public class MissileCommandApp extends GameApplication {
         input.addAction(new UserAction("Spawn Anti-Ballistic") {
             @Override
             protected void onAction() {
-                Input input = getInput();
-                Point2D cursor = input.getMousePositionWorld();
+                if (missileCountdown > 15) {
+//                EntityFactory.setAmmo(0, 0, 0);
+                    Input input = getInput();
+                    Point2D cursor = input.getMousePositionWorld();
 
-                double mouseX = cursor.getX();
-                double mouseY = cursor.getY();
+                    double mouseX = cursor.getX();
+                    double mouseY = cursor.getY();
 
-                Entity friendlyMissile = EntityFactory.newMissile(mouseX - 15, mouseY - 15, true);
-                getGameWorld().addEntity(friendlyMissile);
-                
+                    Entity friendlyMissile = EntityFactory.newMissile(mouseX - 15, mouseY - 15, true);
+                    getGameWorld().addEntity(friendlyMissile);
+                    missileCountdown = 0;
+                } else {
+                    // ignore
+                }
             }
         }, MouseButton.PRIMARY);
-
-//                Entity explosion = EntityFactory.newExplosion(mouseX - 15, mouseY - 15);
-//                getGameWorld().addEntity(explosion);
-//                Timeline timeline = new Timeline(new KeyFrame(
-//                        Duration.millis(250),
-//                        ae -> getGameWorld().removeEntity(explosion)));
-//                timeline.play();
-//            }
-//        }, MouseButton.PRIMARY);
     }
 
     @Override
@@ -165,6 +165,31 @@ public class MissileCommandApp extends GameApplication {
             @Override
             protected void onCollisionBegin(Entity city, Entity missile) {
                 missile.removeFromWorld();
+                citiesDestroyed.set(citiesDestroyed.get() - 1);
+
+                city.getComponentUnsafe(TypeComponent.class).setValue(EntityType.DESTROYED_CITY);
+                city.getComponentUnsafe(MainViewComponent.class).setView(new EntityView(getAssetLoader().loadTexture("cityDE.png")));
+                Point2D explosionLocation = Entities.getPosition(missile).getValue();
+
+                Entity explosion = EntityFactory.newExplosion(explosionLocation.getX(), explosionLocation.getY());
+                // Re-implement if I get this working in the future
+//                explosion.getComponentUnsafe(MainViewComponent.class).setView(new EntityView(getAssetLoader().loadTexture("explosionSmoke.gif")));
+
+                getGameWorld().addEntity(explosion);
+                Timeline timeline = new Timeline(new KeyFrame(
+                        Duration.millis(250),
+                        ae -> getGameWorld().removeEntity(explosion)));
+                timeline.play();
+
+//                System.out.println("Your city has been nuked!");
+            }
+        });
+
+        // Setting collisions between destroyed cities and warheads
+        physicsWorld.addCollisionHandler(new CollisionHandler(EntityType.DESTROYED_CITY, EntityType.ENEMY_MISSILE) {
+            @Override
+            protected void onCollisionBegin(Entity city, Entity missile) {
+                missile.removeFromWorld();
                 Point2D explosionLocation = Entities.getPosition(missile).getValue();
 
                 Entity explosion = EntityFactory.newExplosion(explosionLocation.getX(), explosionLocation.getY());
@@ -186,6 +211,15 @@ public class MissileCommandApp extends GameApplication {
 
                 Point2D explosionLocation = Entities.getPosition(missile).getValue();
 
+                // charAt 31 is the first digit in the location, unique to each silo
+                if (silo.toString().contains("25")) {
+                    EntityFactory.ammoL = 0;
+                } else if (silo.toString().contains("385")) {
+                    EntityFactory.ammoC = 0;
+                } else if (silo.toString().contains("745")) {
+                    EntityFactory.ammoR = 0;
+                }
+
                 Entity explosion = EntityFactory.newExplosion(explosionLocation.getX(), explosionLocation.getY());
                 getGameWorld().addEntity(explosion);
                 Timeline timeline = new Timeline(new KeyFrame(
@@ -193,7 +227,7 @@ public class MissileCommandApp extends GameApplication {
                         ae -> getGameWorld().removeEntity(explosion)));
                 timeline.play();
 
-                System.out.println("Your missile silo has been nuked!");
+//                System.out.println("Your missile silo has been nuked!");
             }
         });
     }
@@ -215,6 +249,23 @@ public class MissileCommandApp extends GameApplication {
         transition.play();
         /////////////////////////// Curve code ends ///////////////////////////
 
+        // This shows the remaining city counter
+        this.citiesDestroyed = new SimpleIntegerProperty(6);
+        Text cityCounter = getUIFactory().newText("", Color.WHITE, 20);
+        cityCounter.setTranslateX(550);
+        cityCounter.setTranslateY(100);
+        cityCounter.textProperty().bind(citiesDestroyed.asString("Cities Remaining: %d"));
+        getGameScene().addUINode(cityCounter);
+        
+        // This shows the number of missiles available
+        this.ammoC = new SimpleIntegerProperty(EntityFactory.ammoC);
+        Text ammoCCounter = getUIFactory().newText("", Color.GREEN, 10);
+        cityCounter.setTranslateX(50);
+        cityCounter.setTranslateY(600);
+        cityCounter.textProperty().bind(ammoC.asString("Missiles left: %d"));
+        getGameScene().addUINode(ammoCCounter);
+        
+        // This sets the background
         Texture texture = getAssetLoader().loadTexture("bg.jpg");
 
         EntityView bg = new EntityView(texture);
@@ -230,12 +281,7 @@ public class MissileCommandApp extends GameApplication {
         int size = 20;
         double x = cursor.getX();
         double y = cursor.getY();
-    }
-
-    public GameWorld returnGameWorld() {
-        GameWorld gw = getGameWorld();
-
-        return gw;
+        missileCountdown++;
     }
 
     public static void main(String[] args) {
